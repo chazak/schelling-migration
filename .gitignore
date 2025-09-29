@@ -15,6 +15,10 @@
 # Test files
 test.html
 
+# Legacy fallback files
+simple-terrain.html
+*-fallback.html
+
 # Node modules (if any)
 node_modules/
 
