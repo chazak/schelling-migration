@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Schelling Segregation Simulation - Live Demo</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+        .hero {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+        .demo-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        .demo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.4);
+        }
+        .demo-button {
+            background: linear-gradient(135deg, #4c63d2 0%, #4fb3d9 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .demo-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(76, 99, 210, 0.4);
+            color: white;
+        }
+        .feature-icon {
+            color: #4fb3d9;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <section class="hero is-fullheight-with-navbar">
+        <div class="hero-body">
+            <div class="container">
+                <div class="columns is-vcentered">
+                    <div class="column is-6">
+                        <h1 class="title is-1 has-text-light">
+                            <i class="fas fa-users mr-3"></i>
+                            Schelling Segregation Simulation
+                        </h1>
+                        <p class="subtitle is-4 has-text-grey-light mb-5">
+                            Interactive agent-based model with procedural terrain generation
+                        </p>
+                        <p class="has-text-light mb-6">
+                            Explore Thomas Schelling's famous segregation model through an interactive simulation featuring modern UI, procedural terrain, and real-time dynamics visualization.
+                        </p>
+                        <div class="buttons">
+                            <a href="index.html" class="demo-button">
+                                <i class="fas fa-play mr-2"></i>
+                                Launch Full Simulation
+                            </a>
+                            <a href="simple-terrain.html" class="demo-button" style="background: linear-gradient(135deg, #00b894 0%, #00a085 100%);">
+                                <i class="fas fa-bolt mr-2"></i>
+                                Quick Demo
+                            </a>
+                        </div>
+                    </div>
+                    <div class="column is-6">
+                        <div class="demo-card p-6">
+                            <h3 class="title is-4 has-text-light mb-4">
+                                <i class="fas fa-chart-line mr-2"></i>
+                                Live Demo Features
+                            </h3>
+                            <div class="columns is-multiline">
+                                <div class="column is-6">
+                                    <div class="has-text-centered">
+                                        <i class="fas fa-mouse-pointer feature-icon"></i>
+                                        <p class="has-text-light"><strong>Interactive</strong><br>Drag & drop agents</p>
+                                    </div>
+                                </div>
+                                <div class="column is-6">
+                                    <div class="has-text-centered">
+                                        <i class="fas fa-mountain feature-icon"></i>
+                                        <p class="has-text-light"><strong>Terrain</strong><br>Procedural generation</p>
+                                    </div>
+                                </div>
+                                <div class="column is-6">
+                                    <div class="has-text-centered">
+                                        <i class="fas fa-palette feature-icon"></i>
+                                        <p class="has-text-light"><strong>Customizable</strong><br>Groups & behaviors</p>
+                                    </div>
+                                </div>
+                                <div class="column is-6">
+                                    <div class="has-text-centered">
+                                        <i class="fas fa-chart-bar feature-icon"></i>
+                                        <p class="has-text-light"><strong>Analytics</strong><br>Real-time metrics</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-4">
+                    <div class="demo-card p-5 has-text-centered">
+                        <i class="fas fa-desktop feature-icon"></i>
+                        <h4 class="title is-5 has-text-light">Full Simulation</h4>
+                        <p class="has-text-grey-light mb-4">
+                            Complete experience with ES6 modules, modern dark theme UI, and advanced controls.
+                        </p>
+                        <a href="index.html" class="demo-button">
+                            <i class="fas fa-rocket mr-2"></i>
+                            Launch Full Version
+                        </a>
+                    </div>
+                </div>
+                <div class="column is-4">
+                    <div class="demo-card p-5 has-text-centered">
+                        <i class="fas fa-bolt feature-icon"></i>
+                        <h4 class="title is-5 has-text-light">Quick Demo</h4>
+                        <p class="has-text-grey-light mb-4">
+                            Lightweight version that works instantly without module loading requirements.
+                        </p>
+                        <a href="simple-terrain.html" class="demo-button">
+                            <i class="fas fa-play mr-2"></i>
+                            Try Quick Demo
+                        </a>
+                    </div>
+                </div>
+                <div class="column is-4">
+                    <div class="demo-card p-5 has-text-centered">
+                        <i class="fab fa-github feature-icon"></i>
+                        <h4 class="title is-5 has-text-light">Source Code</h4>
+                        <p class="has-text-grey-light mb-4">
+                            Explore the ES6 modular architecture and Unity-style design patterns.
+                        </p>
+                        <a href="https://github.com/chazak/schelling-migration" class="demo-button">
+                            <i class="fab fa-github mr-2"></i>
+                            View on GitHub
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer" style="background: #1a1a2e; border-top: 1px solid rgba(255,255,255,0.1);">
+        <div class="content has-text-centered has-text-grey-light">
+            <p>
+                <strong class="has-text-light">Schelling Segregation Simulation</strong> by 
+                <a href="https://github.com/chazak" class="has-text-info">chazak</a>. 
+                Built with <i class="fas fa-heart has-text-danger"></i> using vanilla JavaScript and p5.js.
+            </p>
+            <p>
+                <a href="https://github.com/chazak/schelling-migration" class="has-text-info">
+                    <i class="fab fa-github mr-1"></i> GitHub Repository
+                </a>
+            </p>
+        </div>
+    </footer>
+</body>
+</html>

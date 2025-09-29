@@ -2,6 +2,14 @@
 
 An interactive agent-based model implementing Thomas Schelling's famous segregation model with procedural terrain generation.
 
+## 🌐 Live Demo
+
+**Try it now!** → [**https://chazak.github.io/schelling-migration/**](https://chazak.github.io/schelling-migration/)
+
+### Demo Options:
+- 🚀 **[Full Simulation](https://chazak.github.io/schelling-migration/index.html)** - Complete experience with ES6 modules
+- ⚡ **[Quick Demo](https://chazak.github.io/schelling-migration/simple-terrain.html)** - Lightweight version
+
 ## Features
 
 ### 🎮 Interactive Simulation
