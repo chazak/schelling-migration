@@ -44,7 +44,7 @@
                 <div id="populationStats">No agents placed</div>
             </div>
 
-            <button id="resetGrid">Reset Grid</button>
+
         </div>
 
         <div id="canvasContainer">
@@ -92,6 +92,8 @@
         let waterThreshold = 0.3;
         let flatlandThreshold = 0.7;
         let terrainSeed = 12345;
+        let noiseFrequency = 4.0;
+        let noiseAmplitude = 2.0;
         
         let grid = [];
         let terrain = [];
@@ -126,11 +128,11 @@
             for (let r = 0; r < gridSize; r++) {
                 terrain[r] = [];
                 for (let c = 0; c < gridSize; c++) {
-                    // Generate elevation using simple noise
+                    // Generate elevation using configurable noise
                     const nx = (c / gridSize - 0.5);
                     const ny = (r / gridSize - 0.5);
-                    let elevation = simpleNoise(nx * 4, ny * 4, terrainSeed);
-                    elevation = Math.pow(elevation, 2); // Make valleys
+                    let elevation = simpleNoise(nx * noiseFrequency, ny * noiseFrequency, terrainSeed);
+                    elevation = Math.pow(elevation, noiseAmplitude); // Configurable terrain shaping
                     
                     // Convert to terrain type
                     if (elevation < waterThreshold) {
@@ -290,6 +292,8 @@
             const flatlandSlider = document.getElementById("flatlandThreshold");
             const generateTerrainButton = document.getElementById("generateTerrain");
             const randomButton = document.getElementById("randomTerrain");
+            const noiseFrequencySlider = document.getElementById("noiseFrequency");
+            const noiseAmplitudeSlider = document.getElementById("noiseAmplitude");
             
             // Population controls
             const populateButton = document.getElementById("populateAgents");
@@ -335,10 +339,22 @@
                 clearAllAgents();
             };
             
+            // Noise parameter controls
+            noiseFrequencySlider.oninput = (e) => {
+                noiseFrequency = parseFloat(e.target.value);
+                document.getElementById("noiseFrequencyLabel").innerText = noiseFrequency;
+                // Don't auto-regenerate - user must click Generate Terrain
+            };
+            
+            noiseAmplitudeSlider.oninput = (e) => {
+                noiseAmplitude = parseFloat(e.target.value);
+                document.getElementById("noiseAmplitudeLabel").innerText = noiseAmplitude;
+                // Don't auto-regenerate - user must click Generate Terrain
+            };
+            
             // Other existing controls...
             const numGroupsSlider = document.getElementById("numGroups");
             const gridSizeSlider = document.getElementById("gridSize");
-            const resetButton = document.getElementById("resetGrid");
             
             numGroupsSlider.oninput = (e) => {
                 K = parseInt(e.target.value);
@@ -358,10 +374,7 @@
                 initGrid();
             };
             
-            resetButton.onclick = () => {
-                console.log("Reset button clicked - full reset");
-                initGrid();
-            };
+
         }
         
         function updateTerrainStats() {
