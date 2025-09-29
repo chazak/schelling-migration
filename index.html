@@ -261,11 +261,11 @@
             // First, clear existing agents to prevent duplicates
             clearAllAgents();
             
-            // Get walkable positions only
+            // Get walkable positions only (exclude water and mountains)
             let walkableCells = [];
             for (let r = 0; r < gridSize; r++) {
                 for (let c = 0; c < gridSize; c++) {
-                    if (terrain[r][c] !== TERRAIN_TYPES.WATER) {
+                    if (terrain[r][c] === TERRAIN_TYPES.FLATLAND) {
                         walkableCells.push([r, c]);
                     }
                 }
@@ -300,8 +300,8 @@
                 for (let i = 0; i < count && idx < walkableCells.length; i++, idx++) {
                     let [r, c] = walkableCells[idx];
                     
-                    // Double-check the cell is empty and walkable
-                    if (grid[r][c] === -1 && terrain[r][c] !== TERRAIN_TYPES.WATER) {
+                    // Double-check the cell is empty and walkable (flatland only)
+                    if (grid[r][c] === -1 && terrain[r][c] === TERRAIN_TYPES.FLATLAND) {
                         grid[r][c] = g;
                         placedAgents++;
                         groupPlaced++;
@@ -366,9 +366,9 @@
             if (hoverR >= 0 && hoverR < gridSize && hoverC >= 0 && hoverC < gridSize) {
                 let agent = grid[hoverR][hoverC];
                 let terrainType = terrain[hoverR][hoverC];
-                let terrainName = terrainType === 0 ? 'Water' : terrainType === 1 ? 'Flatland' : 'Mountain';
+                let terrainName = terrainType === 0 ? 'Water (Not Walkable)' : terrainType === 1 ? 'Flatland' : 'Mountain (Not Walkable)';
                 
-                if (agent != -1 || terrainType === TERRAIN_TYPES.WATER) {
+                if (agent != -1 || terrainType !== TERRAIN_TYPES.FLATLAND) {
                     let happiness = agent != -1 ? computeHappiness(hoverR, hoverC).toFixed(2) : 'N/A';
                     let welfare = computeSocialWelfare().toFixed(2);
                     tooltipDiv.style.display = "block";
@@ -513,7 +513,7 @@
             
             const total = waterCount + flatlandCount + mountainCount;
             document.getElementById("terrainStats").innerHTML = 
-                `Terrain: ${waterCount}W, ${flatlandCount}F, ${mountainCount}M (${flatlandCount + mountainCount} walkable)`;
+                `Terrain: ${waterCount}W, ${flatlandCount}F, ${mountainCount}M (${flatlandCount} walkable)`;
         }
         
         function updatePopulationStats() {
@@ -604,7 +604,7 @@
         function mousePressed() {
             let r = floor(mouseY / cellSize);
             let c = floor(mouseX / cellSize);
-            if (r >= 0 && r < gridSize && c >= 0 && c < gridSize && terrain[r][c] !== TERRAIN_TYPES.WATER) {
+            if (r >= 0 && r < gridSize && c >= 0 && c < gridSize && terrain[r][c] === TERRAIN_TYPES.FLATLAND) {
                 let agent = grid[r][c];
                 if (agent != -1) {
                     draggingAgent = { r: r, c: c, group: agent };
@@ -619,9 +619,12 @@
             if (draggingAgent) {
                 let r = floor(mouseY / cellSize);
                 let c = floor(mouseX / cellSize);
-                if (r >= 0 && r < gridSize && c >= 0 && c < gridSize && terrain[r][c] !== TERRAIN_TYPES.WATER) {
+                if (r >= 0 && r < gridSize && c >= 0 && c < gridSize && terrain[r][c] === TERRAIN_TYPES.FLATLAND) {
                     if (grid[r][c] == -1) grid[r][c] = draggingAgent.group;
                     else grid[draggingAgent.r][draggingAgent.c] = draggingAgent.group;
+                } else {
+                    // Return agent to original position if dropped on non-walkable terrain
+                    grid[draggingAgent.r][draggingAgent.c] = draggingAgent.group;
                 }
                 draggingAgent = null;
             }
