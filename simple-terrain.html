@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Schelling with Terrain - Simple Version</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Schelling Segregation Game Prototype with Terrain</h1>
+
+    <div id="container">
+        <div id="controls">
+            <label>Number of Groups: <span id="numGroupsLabel">2</span></label>
+            <input type="range" id="numGroups" min="2" max="5" value="2">
+
+            <label>Grid Size: <span id="gridSizeLabel">20</span></label>
+            <input type="range" id="gridSize" min="5" max="100" value="20">
+
+            <div id="groupColors">
+                <p>Group Colors:</p>
+                <div id="colorPickers"></div>
+            </div>
+            
+            <!-- Terrain Controls -->
+            <div id="terrainControls">
+                <h3>Terrain Settings</h3>
+                <label>Water Threshold: <span id="waterThresholdLabel">0.3</span></label>
+                <input type="range" id="waterThreshold" min="0.1" max="0.9" step="0.05" value="0.3">
+                
+                <label>Flatland Threshold: <span id="flatlandThresholdLabel">0.7</span></label>
+                <input type="range" id="flatlandThreshold" min="0.1" max="0.9" step="0.05" value="0.7">
+                
+                <div id="terrainButtons">
+                    <button id="generateTerrain">Generate Terrain</button>
+                    <button id="randomTerrain">Random Seed</button>
+                </div>
+            </div>
+            
+            <!-- Agent Population Controls -->
+            <div id="populationControls">
+                <h3>Agent Population</h3>
+                <button id="populateAgents">Populate Agents</button>
+                <button id="clearAgents">Clear All Agents</button>
+                <div id="populationStats">No agents placed</div>
+            </div>
+
+            <button id="resetGrid">Reset Grid</button>
+        </div>
+
+        <div id="canvasContainer">
+            <div id="metrics">
+                <p id="happiness">0</p>
+                <p id="welfare">0</p>
+                <p id="terrainStats">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="tooltip" style="position:absolute; background:#fff; border:1px solid #000; padding:4px; display:none;"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+    <script>
+        console.log("Simple terrain version loaded");
+        
+        // Simple terrain system without ES6 modules
+        const TERRAIN_TYPES = {
+            WATER: 0,
+            FLATLAND: 1, 
+            MOUNTAIN: 2
+        };
+        
+        const TERRAIN_COLORS = {
+            0: '#1E90FF', // Water
+            1: '#90EE90', // Flatland
+            2: '#8B4513'  // Mountain
+        };
+        
+        // Simple noise implementation
+        function simpleNoise(x, y, seed = 12345) {
+            // Very basic pseudo-random noise
+            const n = Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453123;
+            return (n - Math.floor(n));
+        }
+        
+        // Global variables
+        let gridSize = 20;
+        let cellSize = 30;
+        let K = 2;
+        let colors = ["#FF4136", "#0074D9"];
+        let groupSizes = [50, 50];
+        let tolerance = [0.3, 0.3];
+        let waterThreshold = 0.3;
+        let flatlandThreshold = 0.7;
+        let terrainSeed = 12345;
+        
+        let grid = [];
+        let terrain = [];
+        let draggingAgent = null;
+        let offsetX = 0, offsetY = 0;
+        let tooltipDiv;
+        
+        function setup() {
+            console.log("p5.js setup called");
+            let canvas = createCanvas(gridSize * cellSize, gridSize * cellSize);
+            canvas.parent("canvasContainer");
+            tooltipDiv = document.getElementById("tooltip");
+            setupControls();
+            initGrid();
+            
+            // Update terrain stats display
+            updateTerrainStats();
+            console.log("Setup complete with terrain!");
+        }
+        
+        function initGrid() {
+            generateTerrain();
+            clearAllAgents();
+            populateAgents();
+            resizeCanvas(gridSize * cellSize, gridSize * cellSize);
+        }
+        
+        function generateTerrain() {
+            console.log("Generating terrain...");
+            // Generate terrain only
+            terrain = [];
+            for (let r = 0; r < gridSize; r++) {
+                terrain[r] = [];
+                for (let c = 0; c < gridSize; c++) {
+                    // Generate elevation using simple noise
+                    const nx = (c / gridSize - 0.5);
+                    const ny = (r / gridSize - 0.5);
+                    let elevation = simpleNoise(nx * 4, ny * 4, terrainSeed);
+                    elevation = Math.pow(elevation, 2); // Make valleys
+                    
+                    // Convert to terrain type
+                    if (elevation < waterThreshold) {
+                        terrain[r][c] = TERRAIN_TYPES.WATER;
+                    } else if (elevation < flatlandThreshold) {
+                        terrain[r][c] = TERRAIN_TYPES.FLATLAND;
+                    } else {
+                        terrain[r][c] = TERRAIN_TYPES.MOUNTAIN;
+                    }
+                }
+            }
+            console.log("Terrain generated");
+            updateTerrainStats();
+        }
+        
+        function clearAllAgents() {
+            console.log("Clearing all agents...");
+            // Initialize empty agent grid
+            grid = Array.from({ length: gridSize }, () => Array(gridSize).fill(-1));
+            updatePopulationStats();
+            console.log("All agents cleared");
+        }
+        
+        function populateAgents() {
+            console.log("Populating agents...");
+            
+            // First, clear existing agents to prevent duplicates
+            clearAllAgents();
+            
+            // Get walkable positions only
+            let walkableCells = [];
+            for (let r = 0; r < gridSize; r++) {
+                for (let c = 0; c < gridSize; c++) {
+                    if (terrain[r][c] !== TERRAIN_TYPES.WATER) {
+                        walkableCells.push([r, c]);
+                    }
+                }
+            }
+            
+            console.log(`Found ${walkableCells.length} walkable cells`);
+            
+            // Calculate total agents needed
+            let totalAgentsNeeded = groupSizes.reduce((sum, size) => sum + size, 0);
+            console.log(`Need to place ${totalAgentsNeeded} agents`);
+            
+            // Check capacity
+            if (totalAgentsNeeded > walkableCells.length) {
+                console.warn(`Not enough space! Need ${totalAgentsNeeded} agents but only ${walkableCells.length} walkable cells available.`);
+                alert(`Warning: Not enough walkable terrain! Need ${totalAgentsNeeded} agents but only ${walkableCells.length} walkable cells available.`);
+                return;
+            }
+            
+            // Shuffle walkable positions
+            shuffle(walkableCells, true);
+            
+            // Place agents only on walkable terrain with strict counting
+            let placedAgents = 0;
+            let idx = 0;
+            
+            for (let g = 0; g < K; g++) {
+                let count = groupSizes[g];
+                let groupPlaced = 0;
+                
+                console.log(`Placing group ${g}: ${count} agents`);
+                
+                for (let i = 0; i < count && idx < walkableCells.length; i++, idx++) {
+                    let [r, c] = walkableCells[idx];
+                    
+                    // Double-check the cell is empty and walkable
+                    if (grid[r][c] === -1 && terrain[r][c] !== TERRAIN_TYPES.WATER) {
+                        grid[r][c] = g;
+                        placedAgents++;
+                        groupPlaced++;
+                    } else {
+                        console.warn(`Cell [${r},${c}] is not available for placement`);
+                        i--; // Retry this agent
+                    }
+                }
+                
+                console.log(`Group ${g}: placed ${groupPlaced}/${count} agents`);
+            }
+            
+            console.log(`Total agents placed: ${placedAgents}/${totalAgentsNeeded}`);
+            updatePopulationStats();
+        }
+        
+        function draw() {
+            background(220);
+            
+            let hoverR = floor(mouseY / cellSize);
+            let hoverC = floor(mouseX / cellSize);
+            
+            // Draw terrain and agents
+            for (let r = 0; r < gridSize; r++) {
+                for (let c = 0; c < gridSize; c++) {
+                    let x = c * cellSize;
+                    let y = r * cellSize;
+                    
+                    // Draw terrain background
+                    stroke(0);
+                    fill(TERRAIN_COLORS[terrain[r][c]]);
+                    rect(x, y, cellSize, cellSize);
+                    
+                    // Draw agent if present
+                    let agent = grid[r][c];
+                    if (agent != -1 && !(draggingAgent && draggingAgent.r === r && draggingAgent.c === c)) {
+                        let happiness = computeHappiness(r, c);
+                        fill(colors[agent]);
+                        ellipse(x + cellSize / 2, y + cellSize / 2, cellSize * 0.8);
+                        
+                        // Highlight unhappy agents
+                        if (happiness < tolerance[agent]) {
+                            stroke(255, 0, 0);
+                            strokeWeight(2);
+                            noFill();
+                            ellipse(x + cellSize / 2, y + cellSize / 2, cellSize * 0.9);
+                            strokeWeight(1);
+                        }
+                    }
+                }
+            }
+            
+            // Draw dragged agent
+            if (draggingAgent) {
+                fill(colors[draggingAgent.group]);
+                ellipse(mouseX - offsetX, mouseY - offsetY, cellSize * 0.8);
+            }
+            
+            updateMetrics();
+            
+            // Enhanced tooltip with terrain info
+            if (hoverR >= 0 && hoverR < gridSize && hoverC >= 0 && hoverC < gridSize) {
+                let agent = grid[hoverR][hoverC];
+                let terrainType = terrain[hoverR][hoverC];
+                let terrainName = terrainType === 0 ? 'Water' : terrainType === 1 ? 'Flatland' : 'Mountain';
+                
+                if (agent != -1 || terrainType === TERRAIN_TYPES.WATER) {
+                    let happiness = agent != -1 ? computeHappiness(hoverR, hoverC).toFixed(2) : 'N/A';
+                    let welfare = computeSocialWelfare().toFixed(2);
+                    tooltipDiv.style.display = "block";
+                    tooltipDiv.style.left = (mouseX + 630) + "px";
+                    tooltipDiv.style.top = (mouseY + 80) + "px";
+                    tooltipDiv.innerHTML = `Terrain: ${terrainName}<br>` + 
+                                          (agent != -1 ? `Group: ${agent}<br>Happiness: ${happiness}<br>` : 'Empty/Water<br>') +
+                                          `Social Welfare: ${welfare}`;
+                } else {
+                    tooltipDiv.style.display = "none";
+                }
+            } else {
+                tooltipDiv.style.display = "none";
+            }
+        }
+        
+        function setupControls() {
+            // Terrain controls
+            const waterSlider = document.getElementById("waterThreshold");
+            const flatlandSlider = document.getElementById("flatlandThreshold");
+            const generateTerrainButton = document.getElementById("generateTerrain");
+            const randomButton = document.getElementById("randomTerrain");
+            
+            // Population controls
+            const populateButton = document.getElementById("populateAgents");
+            const clearButton = document.getElementById("clearAgents");
+            
+            // Terrain threshold sliders - only update thresholds, don't regenerate
+            waterSlider.oninput = (e) => {
+                waterThreshold = parseFloat(e.target.value);
+                document.getElementById("waterThresholdLabel").innerText = waterThreshold;
+                // Don't auto-regenerate terrain - user must click Generate Terrain
+            };
+            
+            flatlandSlider.oninput = (e) => {
+                flatlandThreshold = parseFloat(e.target.value);
+                document.getElementById("flatlandThresholdLabel").innerText = flatlandThreshold;
+                // Don't auto-regenerate terrain - user must click Generate Terrain
+            };
+            
+            // Generate terrain button - regenerates terrain only
+            generateTerrainButton.onclick = () => {
+                console.log("Generate Terrain button clicked");
+                generateTerrain();
+                // Clear agents when terrain changes
+                clearAllAgents();
+            };
+            
+            // Random seed button
+            randomButton.onclick = () => {
+                terrainSeed = Math.floor(Math.random() * 1000000);
+                console.log("New random seed:", terrainSeed);
+                generateTerrain();
+                clearAllAgents();
+            };
+            
+            // Population buttons
+            populateButton.onclick = () => {
+                console.log("Populate Agents button clicked");
+                populateAgents();
+            };
+            
+            clearButton.onclick = () => {
+                console.log("Clear Agents button clicked");
+                clearAllAgents();
+            };
+            
+            // Other existing controls...
+            const numGroupsSlider = document.getElementById("numGroups");
+            const gridSizeSlider = document.getElementById("gridSize");
+            const resetButton = document.getElementById("resetGrid");
+            
+            numGroupsSlider.oninput = (e) => {
+                K = parseInt(e.target.value);
+                document.getElementById("numGroupsLabel").innerText = K;
+                // Adjust arrays to match new K value
+                while (colors.length < K) colors.push("#" + Math.floor(Math.random() * 16777215).toString(16));
+                while (groupSizes.length < K) groupSizes.push(10);
+                while (tolerance.length < K) tolerance.push(0.3);
+                // Don't auto-populate - user must click Populate
+                clearAllAgents();
+            };
+            
+            gridSizeSlider.oninput = (e) => {
+                gridSize = parseInt(e.target.value);
+                document.getElementById("gridSizeLabel").innerText = gridSize;
+                // Regenerate everything when grid size changes
+                initGrid();
+            };
+            
+            resetButton.onclick = () => {
+                console.log("Reset button clicked - full reset");
+                initGrid();
+            };
+        }
+        
+        function updateTerrainStats() {
+            let waterCount = 0, flatlandCount = 0, mountainCount = 0;
+            for (let r = 0; r < gridSize; r++) {
+                for (let c = 0; c < gridSize; c++) {
+                    switch(terrain[r][c]) {
+                        case TERRAIN_TYPES.WATER: waterCount++; break;
+                        case TERRAIN_TYPES.FLATLAND: flatlandCount++; break;
+                        case TERRAIN_TYPES.MOUNTAIN: mountainCount++; break;
+                    }
+                }
+            }
+            
+            const total = waterCount + flatlandCount + mountainCount;
+            document.getElementById("terrainStats").innerHTML = 
+                `Terrain: ${waterCount}W, ${flatlandCount}F, ${mountainCount}M (${flatlandCount + mountainCount} walkable)`;
+        }
+        
+        // Existing helper functions (simplified)
+        function mousePressed() {
+            let r = floor(mouseY / cellSize);
+            let c = floor(mouseX / cellSize);
+            if (r >= 0 && r < gridSize && c >= 0 && c < gridSize && terrain[r][c] !== TERRAIN_TYPES.WATER) {
+                let agent = grid[r][c];
+                if (agent != -1) {
+                    draggingAgent = { r: r, c: c, group: agent };
+                    offsetX = mouseX - c * cellSize - cellSize / 2;
+                    offsetY = mouseY - r * cellSize - cellSize / 2;
+                    grid[r][c] = -1;
+                }
+            }
+        }
+        
+        function mouseReleased() {
+            if (draggingAgent) {
+                let r = floor(mouseY / cellSize);
+                let c = floor(mouseX / cellSize);
+                if (r >= 0 && r < gridSize && c >= 0 && c < gridSize && terrain[r][c] !== TERRAIN_TYPES.WATER) {
+                    if (grid[r][c] == -1) grid[r][c] = draggingAgent.group;
+                    else grid[draggingAgent.r][draggingAgent.c] = draggingAgent.group;
+                }
+                draggingAgent = null;
+            }
+        }
+        
+        function computeHappiness(r, c) {
+            let g = grid[r][c];
+            if (g == -1) return 0;
+            let neighbors = getNeighbors(r, c);
+            if (neighbors.length == 0) return 1.0;
+            let friends = neighbors.filter(([rr, cc]) => grid[rr][cc] == g).length;
+            return friends / neighbors.length;
+        }
+        
+        function getNeighbors(r, c) {
+            let neighbors = [];
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    if (dr == 0 && dc == 0) continue;
+                    let rr = r + dr;
+                    let cc = c + dc;
+                    if (rr >= 0 && rr < gridSize && cc >= 0 && cc < gridSize) neighbors.push([rr, cc]);
+                }
+            }
+            return neighbors;
+        }
+        
+        function computeSocialWelfare() {
+            let total = 0;
+            for (let r = 0; r < gridSize; r++) {
+                for (let c = 0; c < gridSize; c++) {
+                    if (grid[r][c] != -1) total += computeHappiness(r, c);
+                }
+            }
+            return total;
+        }
+        
+        function updateMetrics() {
+            let totalHappiness = 0;
+            let totalAgents = 0;
+            for (let r = 0; r < gridSize; r++) {
+                for (let c = 0; c < gridSize; c++) {
+                    let agent = grid[r][c];
+                    if (agent != -1) {
+                        totalHappiness += computeHappiness(r, c);
+                        totalAgents += 1;
+                    }
+                }
+            }
+            let avgHappiness = totalAgents > 0 ? (totalHappiness / totalAgents).toFixed(2) : 0;
+            document.getElementById("happiness").innerText = `Average Happiness: ${avgHappiness}`;
+            document.getElementById("welfare").innerText = `Social Welfare: ${totalHappiness.toFixed(2)}`;
+            
+            updateTerrainStats();
+        }
+    </script>
+</body>
+</html>
