@@ -1,0 +1,6 @@
+CompileFlags:
+  Add: [
+    "-std=c23",
+    "-Ithirdparty/raylib/src"
+  ]
+
